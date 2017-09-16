@@ -170,7 +170,51 @@ class MinimaxPlayer(IsolationPlayer):
         # Return the best move from the last completed search iteration
         return best_move
 
-    def minimax(self, game, depth):
+    def terminal_test(self, game):
+        """ Return True if the game is over for the active player
+        and False otherwise.
+        """
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        return not bool(game.get_legal_moves())  # by Assumption 1
+
+    def min_value(self, game, depth, search_depth):
+        """ Return the value for a win (+1) if the game is over,
+        otherwise return the minimum value over all legal child
+        nodes.
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if self.terminal_test(game):
+            return 100  # by Assumption 2
+        v = float("inf")
+        if depth >= search_depth:
+            return self.score(game, self)
+        for m in game.get_legal_moves():
+            v = min(v, self.max_value(game.forecast_move(m), depth + 1, search_depth))
+        return v
+
+    def max_value(self, game, depth, search_depth):
+        """ Return the value for a loss (-1) if the game is over,
+        otherwise return the maximum value over all legal child
+        nodes.
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        if self.terminal_test(game):
+            return -100  # by assumption 2
+        v = float("-inf")
+        if depth >= search_depth:
+            return self.score(game, self)
+        for m in game.get_legal_moves():
+            v = max(v, self.min_value(game.forecast_move(m), depth + 1, search_depth))
+        return v
+
+    def minimax(self, game, search_depth):
         """Implement depth-limited minimax search algorithm as described in
         the lectures.
 
@@ -212,8 +256,17 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        top_score = -100
+        top_move = ()
+        depth = 0
+
+        for move in game.get_legal_moves():
+            value = self.min_value(game.forecast_move(move), depth + 1, search_depth)
+            if top_score < value:
+                top_score = value
+                top_move = move
+        return top_move
+
 
 
 class AlphaBetaPlayer(IsolationPlayer):
@@ -254,10 +307,23 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
 
-    def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
+        for search_depth in range(10):
+            try:
+                # The try/except block will automatically catch the exception
+                # raised when the timer is about to expire.
+                return self.alphabeta(game, search_depth)
+
+            except SearchTimeout:
+                break  # Handle any actions required after timeout as needed
+
+        # Return the best move from the last completed search iteration
+        return best_move
+
+    def alphabeta(self, game, search_depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
         described in the lectures.
 
@@ -305,5 +371,13 @@ class AlphaBetaPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        top_score = -100
+        top_move = ()
+        depth = 0
+
+        for move in game.get_legal_moves():
+            value = self.min_value(game.forecast_move(move), depth + 1, search_depth)
+            if top_score < value:
+                top_score = value
+                top_move = move
+        return top_move

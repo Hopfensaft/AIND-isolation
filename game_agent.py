@@ -2,8 +2,8 @@
 test your agent's strength against a set of known agents using tournament.py
 and include the results in your report.
 """
-import random
 import isolation
+
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
@@ -40,7 +40,12 @@ def custom_score(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return float(len(game.get_legal_moves(player))-len(game.get_legal_moves(game.get_opponent(player)))/2)
+    player_moves = game.get_legal_moves(player)
+    opponent_moves = game.get_legal_moves(game.get_opponent(player))
+
+    score = len(player_moves)*2 - len(opponent_moves)
+
+    return float(score)
 
 
 def custom_score_2(game, player):
@@ -77,7 +82,7 @@ def custom_score_2(game, player):
     move_steal = 0
     for move in player_moves:
         if move in opponent_moves:
-            move_steal = 5
+            move_steal = 2
 
     return float(len(player_moves) - len(opponent_moves) + move_steal)
 
@@ -110,7 +115,23 @@ def custom_score_3(game, player):
     if game.is_winner(player):
         return float("inf")
 
-    return
+    player_moves = game.get_legal_moves(player)
+    player_position = game.get_player_location(player)
+
+    blank_spaces = game.get_blank_spaces()
+
+    if len(blank_spaces) < int(((game.width * game.height) / 2)):
+        positioning_bonus = 0
+        for pos in blank_spaces:
+            player_x, player_y = player_position
+            empty_x, empty_y = pos
+            positioning_bonus = positioning_bonus + (empty_x - player_x) ** 2 + (empty_y - player_y) ** 2
+        positioning_bonus = max(positioning_bonus / 200, 1)
+    else:
+        central_stance_bonus = abs(3.5 - player_position[0]) + abs(3.5 - player_position[1])
+        positioning_bonus = central_stance_bonus
+
+    return float(len(player_moves) + 3 / positioning_bonus)
 
 
 class IsolationPlayer:
@@ -201,7 +222,7 @@ class MinimaxPlayer(IsolationPlayer):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        return not bool(game.get_legal_moves())  # by Assumption 1
+        return not bool(game.get_legal_moves())
 
     def min_value(self, game, depth, search_depth):
         """ Return the value for a win (+1) if the game is over,
@@ -212,7 +233,7 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         if self.terminal_test(game):
-            return 100  # by Assumption 2
+            return 100
         v = float("inf")
         if depth >= search_depth:
             return self.score(game, self)
@@ -229,7 +250,7 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         if self.terminal_test(game):
-            return -100  # by assumption 2
+            return -100
         v = float("-inf")
         if depth >= search_depth:
             return self.score(game, self)
@@ -255,7 +276,7 @@ class MinimaxPlayer(IsolationPlayer):
             An instance of the Isolation game `Board` class representing the
             current game state
 
-        depth : int
+        search_depth : int
             Depth is an integer representing the maximum number of plies to
             search in the game tree before aborting
 
@@ -289,7 +310,6 @@ class MinimaxPlayer(IsolationPlayer):
                 top_score = value
                 top_move = move
         return top_move
-
 
 
 class AlphaBetaPlayer(IsolationPlayer):
@@ -365,7 +385,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         if self.terminal_test(game):
-            return 100  # by Assumption 2
+            return 100
         v = float("inf")
         if depth >= search_depth:
             return self.score(game, self)
@@ -385,7 +405,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             raise SearchTimeout()
 
         if self.terminal_test(game):
-            return -100  # by assumption 2
+            return -100
         v = float("-inf")
         if depth >= search_depth:
             return self.score(game, self)
@@ -414,7 +434,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             An instance of the Isolation game `Board` class representing the
             current game state
 
-        depth : int
+        search_depth : int
             Depth is an integer representing the maximum number of plies to
             search in the game tree before aborting
 
